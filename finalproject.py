@@ -13,7 +13,7 @@ def load_data(type):
     images = []
     labels = []
 
-    resize_tf = transforms.Resize(size=(224, 224))
+    resize_tf = transforms.Resize(size=(224, 224))      # Images need to be resized for compatibility with ResNet18
 
     for folder in folders:
 
