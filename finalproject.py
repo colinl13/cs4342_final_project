@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from torchvision import transforms
+from torchvision import transforms, models
 import tensorflow as tf
 import numpy as np 
 from PIL import Image
@@ -34,6 +34,24 @@ def load_data(type):
 
     return np.array(images), np.array(labels)
 
+def build_resnet_model(num_classes):    
+    # pretrained model
+    model = models.resnet18(pretrained=True)
+    # change last layer to match our classes from data
+    features = model.fc.in_features
+    model.fc = torch.nn.Linear(features, num_classes)
+    
+    return model
+
+# based default values off of the last homework, must hyperparamater tune
+def train(model, num_epochs=100, learning_rate=1e-4, batch_size=64):
+    # TODO: IMPLEMENT ME
+    return 
+
+def predict(image_tensor, class_names):
+    # TODO: IMPLEMENT ME
+    return
+
 def main():
 
     images_tr, labels_tr = load_data("train")
@@ -52,6 +70,19 @@ def main():
     # Print the shapes of the tensors
     print(f'TensorFlow tensor shape: {image_tf.shape}')
     print(f'PyTorch tensor shape: {image_torch.shape}')
+    # -----------------------------------------------------------
+    
+    # 1. parse data and clean for resnet
+    
+    
+    # 2. build model
+    
+    
+    # 3. train model
+    
+    
+    # 4. test model
+    
 
 if __name__ == "__main__":
     main()
