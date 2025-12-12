@@ -1,6 +1,8 @@
 import torch
 import torchvision
 from torchvision import transforms, models
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
 import tensorflow as tf
 import numpy as np 
 from PIL import Image
@@ -44,9 +46,26 @@ def build_resnet_model(num_classes):
     return model
 
 # based default values off of the last homework, must hyperparamater tune
-def train(model, num_epochs=100, learning_rate=1e-4, batch_size=64):
-    # TODO: IMPLEMENT ME
-    return 
+def train(images, labels, model, num_epochs=100, learning_rate=1e-4, batch_size=64):
+
+    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+    model.to(device)
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    for epoch in range(num_epochs):
+        for i in range(0, len(images), batch_size):
+            inputs = images[i:i+batch_size].to(device)
+            labels = labels[i:i+batch_size].to(device)
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}')
+
 
 def predict(image_tensor, class_names):
     # TODO: IMPLEMENT ME
@@ -70,6 +89,9 @@ def main():
     # Print the shapes of the tensors
     print(f'TensorFlow tensor shape: {image_tf.shape}')
     print(f'PyTorch tensor shape: {image_torch.shape}')
+
+    train(images_tr, labels_tr, build_resnet_model(5))
+
     # -----------------------------------------------------------
     
     # 1. parse data and clean for resnet
