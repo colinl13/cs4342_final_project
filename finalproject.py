@@ -7,6 +7,9 @@ import os
 from torchmetrics import Accuracy, Precision, Recall, F1Score
 from torchmetrics.classification import MulticlassAccuracy
 from torchvision.models import ResNet18_Weights
+import torch.nn.functional
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 
 def load_data(type):
 
@@ -18,6 +21,11 @@ def load_data(type):
     # Images need to be resized and normalized for compatibility with ResNet18
     resize_tf = transforms.Resize(size=(224, 224))
     normalize_tf = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # used for data augmentation, tried to see if we could help with picture distortion 
+    #data_augmentation_tf = transforms.Compose([
+    #    transforms.ColorJitter(brightness=0.2, contrast=0.2),
+    #    transforms.RandomHorizontalFlip(p=0.5),
+    #])
 
     for label_idx, folder in enumerate(folders):
 
@@ -29,6 +37,11 @@ def load_data(type):
 
             image = resize_tf(torchvision.io.read_image(filepath))
             image = image.float() / 255.0
+            
+            # you can use this for data augmentation (color jitter and random flip, but the random flip makes finger gun even worse with my results)
+            #if type == 'train':
+            #    image = data_augmentation_tf(image)
+
             image = normalize_tf(image)
             image = functional.rotate(image, -90)
 
@@ -45,7 +58,7 @@ def build_resnet_model(num_classes):
     model = models.resnet18(weights=weights)
     # change last layer to match our classes from data
     
-    # TEMP
+    # train last layer
     for param in model.parameters():
         param.requires_grad = False
     
@@ -57,11 +70,11 @@ def build_resnet_model(num_classes):
 # based default values off of the last homework, must hyperparamater tune
 # Good at all but finger gun (unfrozen layers): epoch=25 rate=1e-4 batch_size = 10
 def train(images, labels, model, num_epochs=2000, learning_rate=2e-3, batch_size=4):
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using: {device}")
     model.to(device)
     criterion = torch.nn.CrossEntropyLoss()
+    # I believe we have to change model.parameters() to model.fc.parameters() to train last layer so note that if you want to modify
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
 
     for epoch in range(num_epochs):
@@ -95,7 +108,6 @@ def test(model, images, labels):
     model.eval()
 
     with torch.no_grad():
-
         inputs = images.to(device)
         labels = labels.to(device)
 
@@ -111,7 +123,24 @@ def test(model, images, labels):
 
     return acc_per_class
 
-#def visualize_g_x(model, )
+def g_x_pca(model, images):
+    device = torch.device("cude" if torch.cuda.is_avaliable() else "cpu")
+    model = model.to(device)
+    model.eval()
+    
+    # using peace for g_x_pca but can change to any of our other classes
+    class_idx = 3
+    
+    # flatten to be compatible with PCA
+    X = images.view(len(images), -1).cpu().numpy()
+    
+    # p1, p2 
+    pca = PCA(n_components=2)
+    A = pca.fit_transform(X)
+    
+    # 
+    
+
 
 def main():
 
@@ -131,6 +160,8 @@ def main():
     torchvision.utils.save_image(images_te, "debug_test.png")
 
     print(f"Testing accuracy = {test(model, images_te, labels_te)}")
+    
+    g_x_pca(model, images_te)
 
 if __name__ == "__main__":
 
